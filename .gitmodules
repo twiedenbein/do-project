@@ -1,0 +1,4 @@
+[submodule "tincer/roles/ansible-tinc"]
+	path = tincer/roles/ansible-tinc
+	url = git@github.com:twiedenbein/ansible-tinc.git
+	branch = minor_bugfixes
