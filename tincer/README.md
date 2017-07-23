@@ -4,9 +4,10 @@ An Ansible experiment to auto-provision a mesh secured overlay network with bast
 Steps to run this playbook:
 1. Create a symlink or copy your identity file to `roles/digitalocean/files/identity.pub`
 2. `export DO_API_TOKEN=$token`, replacing `$token` with your DigitalOcean API token
-2. If this the first time provisioning a set of machines, you'll need to temporarily disable host key checking.
-via `export ANSIBLE_HOST_KEY_CHECKING="False"`. It can be `unset` subsequent to initial provisioning.
-2. Execute the playbook with `ansible-playbook playbook.yml`
+3. If this the first time provisioning a set of machines, you'll need to temporarily disable host key checking.
+via `export ANSIBLE_HOST_KEY_CHECKING="False"`. It should be `unset` subsequent to initial provisioning in order to help prevent the possibility of a MITM attack.
+4. Execute the playbook with `ansible-playbook playbook.yml`
+5. To test the functionality of the machines, SSH to the IP address of the bastion host and attempt a ping of one of the other machines defined in the main playbook's vars.
 
 The included ansible-tinc role is a submodule pointing to a specific version of ansible-tinc that contains some bugfixes that are necessary to run this playbook. This playbook is fully idempotent, so it is safe to re-run in the event of failure.
 
