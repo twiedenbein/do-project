@@ -52,7 +52,9 @@
       name: "{{item.1.droplet.private_ip_address}}"
       ansible_user: "root"
       # Only the first bastion host in the list can be used with this particular solution.
-      ansible_ssh_common_args: "-o ProxyCommand='ssh -W %h:%p %r@{{ groups['bastion'][0] }}'"
+      ansible_ssh_common_args: "-o ProxyCommand='ssh {{ '-o StrictHostKeyChecking=no'
+        if (lookup('env', 'ANSIBLE_HOST_KEY_CHECKING')) else ''}}
+        -W %h:%p %r@{{ groups['bastion'][0] }}'"
       groups: "{{ default_groups }},{{ droplets[item.0].group }}"
       tinc_vpn_ip: "{{ droplets[item.0].tinc_vpn_ip }}"
       tinc_control_plane_bind_ip: "{{item.1.droplet.private_ip_address}}"
@@ -61,13 +63,7 @@
 
 
 - hosts: "digitalocean"
-  gather_facts: no
-  pre_tasks:
-  - name: run ssh-keyscan to add keys to known_hosts
-    local_action: shell ssh-keyscan {{ inventory_hostname }} >> ~/.ssh/known_hosts
-    # We need to be able to connect before we can gather facts
-  - name: gather facts
-    setup:
+  gather_facts: yes
   roles:
     - ansible-tinc
 
