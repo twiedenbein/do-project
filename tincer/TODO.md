@@ -4,3 +4,4 @@
 * More security everywhere [avoiding root necessity due to synchronization, ssh host-key management, more lockdown, etc.]
 * Better system for host-key management
 * Scalability is a little iffy due to the way hosts are defined and how there can only be one bastion host at this time
+* The virtual inventory could use some work, or possible complete replacement with dynamic inventory. I think improvements to the Ansible DO dynamic inventory provider script and/or the dopy library may be necessary to support my tag-based vision here.)
