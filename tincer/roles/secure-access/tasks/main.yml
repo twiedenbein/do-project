@@ -1,0 +1,13 @@
+- name: allow established/related connections
+  iptables:
+    chain: "INPUT"
+    ctstate: "ESTABLISHED,RELATED"
+    jump: "ACCEPT"
+  become: yes
+
+- name: drop inbound WAN traffic
+  iptables:
+    chain: "INPUT"
+    destination: "{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}"
+    jump: "DROP"
+  become: yes

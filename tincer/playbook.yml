@@ -1,0 +1,78 @@
+---
+- hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    default_groups: "digitalocean,tinc_spine_nodes,tinc_leaf_nodes"
+    droplets:
+      - {name: "bastion", group: "bastion", tinc_vpn_ip: "192.168.1.10"}
+      - {name: "host1", group: "secure-access", tinc_vpn_ip: "192.168.1.11"}
+      - {name: "host2", group: "secure-access", tinc_vpn_ip: "192.168.1.12"}
+
+  tasks:
+  - name: ensure ssh key
+    digital_ocean:
+      state: present
+      command: ssh
+      name: identity.pub
+      ssh_pub_key: "{{ lookup('file', 'roles/digitalocean/files/identity.pub') }}"
+    register: ssh_key
+
+  - name: ensure droplet provisioning
+    digital_ocean:
+      state: present
+      command: droplet
+      name: "{{ item.name }}"
+      unique_name: yes
+      size_id: 512mb
+      region_id: sfo2
+      image_id: centos-7-x64
+      private_networking: yes
+      ssh_key_ids: "{{ ssh_key.ssh_key.id }}"
+    register: provisioned_droplets
+    with_items: "{{ droplets }}"
+
+    # These two tasks are done separately to allow for variable usage in the second task.
+  - name: add bastion host to inventory
+    add_host:
+      # The bastion must be publicly accessible via SSH.
+      name: "{{item.1.droplet.ip_address}}"
+      ansible_user: "root"
+      groups: "{{ default_groups }},{{ droplets[item.0].group }}"
+      tinc_vpn_ip: "{{ droplets[item.0].tinc_vpn_ip }}"
+      tinc_control_plane_bind_ip: "{{item.1.droplet.private_ip_address}}"
+    with_indexed_items: "{{ provisioned_droplets.results }}"
+    when: (droplets[item.0].group == 'bastion')
+    register: bastion_inventory
+
+  - name: add secure-access hosts to inventory
+    add_host:
+      # We add the private IP address, since we've got the ability to talk through a bastion host.
+      name: "{{item.1.droplet.private_ip_address}}"
+      ansible_user: "root"
+      # Only the first bastion host in the list can be used with this particular solution.
+      ansible_ssh_common_args: "-o ProxyCommand='ssh -W %h:%p %r@{{ groups['bastion'][0] }}'"
+      groups: "{{ default_groups }},{{ droplets[item.0].group }}"
+      tinc_vpn_ip: "{{ droplets[item.0].tinc_vpn_ip }}"
+      tinc_control_plane_bind_ip: "{{item.1.droplet.private_ip_address}}"
+    with_indexed_items: "{{ provisioned_droplets.results }}"
+    when: (droplets[item.0].group == 'secure-access')
+
+
+- hosts: "digitalocean"
+  gather_facts: no
+  pre_tasks:
+  - name: run ssh-keyscan to add keys to known_hosts
+    local_action: shell ssh-keyscan {{ inventory_hostname }} >> ~/.ssh/known_hosts
+    # We need to be able to connect before we can gather facts
+  - name: gather facts
+    setup:
+  roles:
+    - ansible-tinc
+
+
+- hosts: "secure-access"
+  gather_facts: yes
+  roles:
+    - "secure-access"
