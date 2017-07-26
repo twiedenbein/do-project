@@ -1,0 +1,12 @@
+- name: ACCEPT TCP SSH traffic
+  iptables:
+    chain: "INPUT"
+    protocol: "tcp"
+    destination_port: 22
+    jump: "ACCEPT"
+
+- name: DROP all other inbound traffic on eth0
+  iptables:
+    chain: "INPUT"
+    in_interface: "eth0"
+    jump: "DROP"

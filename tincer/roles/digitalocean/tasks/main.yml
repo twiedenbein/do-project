@@ -1,0 +1,6 @@
+- name: ACCEPT established/related connections
+  iptables:
+    action: insert
+    chain: "INPUT"
+    ctstate: "ESTABLISHED,RELATED"
+    jump: "ACCEPT"

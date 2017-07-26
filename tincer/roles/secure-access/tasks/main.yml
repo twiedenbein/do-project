@@ -1,9 +1,3 @@
-- name: ACCEPT established/related connections
-  iptables:
-    chain: "INPUT"
-    ctstate: "ESTABLISHED,RELATED"
-    jump: "ACCEPT"
-
 - name: ACCEPT TCP SSH traffic from bastion hosts
   iptables:
     chain: "INPUT"
