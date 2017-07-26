@@ -1,13 +1,50 @@
-- name: allow established/related connections
+- name: ACCEPT established/related connections
   iptables:
     chain: "INPUT"
     ctstate: "ESTABLISHED,RELATED"
     jump: "ACCEPT"
-  become: yes
 
-- name: drop inbound WAN traffic
+- name: ACCEPT TCP SSH traffic from bastion hosts
   iptables:
     chain: "INPUT"
-    destination: "{{ hostvars[inventory_hostname]['ansible_default_ipv4']['address'] }}"
+    # eth1 is the default internal interface for DO droplets
+    source: "{{ hostvars[item]['ansible_eth1']['ipv4']['address'] }}"
+    protocol: "tcp"
+    destination_port: 22
+    jump: "ACCEPT"
+  with_inventory_hostnames:
+    - bastion
+
+- name: ACCEPT TCP tinc traffic for known hosts
+  iptables:
+    chain: "INPUT"
+    # eth1 is the default internal interface for DO droplets
+    source: "{{ hostvars[item]['ansible_tun0']['ipv4']['address'] }}"
+    protocol: "tcp"
+    destination_port: 655
+    jump: "ACCEPT"
+  with_inventory_hostnames:
+    - digitalocean
+
+- name: ACCEPT UDP tinc traffic for known hosts
+  iptables:
+    chain: "INPUT"
+    # eth1 is the default internal interface for DO droplets
+    source: "{{ hostvars[item]['ansible_tun0']['ipv4']['address'] }}"
+    protocol: "udp"
+    destination_port: 655
+    jump: "ACCEPT"
+  with_inventory_hostnames:
+    - digitalocean
+
+- name: DROP all other inbound traffic on eth0
+  iptables:
+    chain: "INPUT"
+    in_interface: "eth0"
     jump: "DROP"
-  become: yes
+
+- name: DROP all other inbound traffic on eth1
+  iptables:
+    chain: "INPUT"
+    in_interface: "eth1"
+    jump: "DROP"
